@@ -12,7 +12,7 @@ Personal notes on my journey to mastering Rust on Solana.
 6. Solana’s executable accounts CAN initiate txns
 7. Private keys for solana accounts?
 
-Dec 4 & 5
+### Dec 4
 1. default types: i32, f64
 2. usize is big enough to store ANY pointer / offset in a data structure
 3. assert!(0.1+0.2==0.3); fails coz 0.1, 0.2’s default type is f64 so 0.1 = 0.100000000000002 etc, but (0.1_f32 + 0.2+f32 == 0.3) passes
@@ -45,3 +45,23 @@ Dec 4 & 5
 21. let s1 = String::from("hi,中国"); let h1 = &s1[3..6]; => h1 is 中, as 中 is 3 bytes long
 22. &String -> &str is implicitly convertible by compiler in rust
 23. tuples with size > 12 cannot be printed directly with printlin!()
+
+
+### Dec 5
+24. All fields of a struct have to be initialised at the same time. Enum variants can be initialised separately in any order
+25. Accessing
+    1. Struct: struct_instance_name.var_name
+    2. Enum: EnumName::EnumVariable
+26. Struct fields are name: value vs Enum variants are mostly only name, but can be name = value too
+27. [#derive(Debug)] trait and printlln!(“{:?}”,struct_instance_name OR EnumName::EnumVariable); to print compound types
+28. names being accessed after the loop below will throw error coz ownership of its elements was taken by name
+        let names = [String::from("liming"),String::from("hanmeimei")];
+        for name in names {
+            // Do something with name...
+        }
+29. Iterate the indexing and value in 'a'
+
+        let a = [4, 3, 2, 1];
+        for (i,v) in a.iter().enumerate() {
+            println!("The {}th element is {}",i+1,v);
+        }
