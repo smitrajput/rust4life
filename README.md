@@ -35,7 +35,7 @@ Personal notes on my journey to mastering Rust on Solana.
     4. once ownership is ‘referenced’ from a variable, accessing this variable after will NOT throw error
     5. Move: transfers ownership of the value, Reference: creates a reference to owner of value (aka borrowing), Copy: sends copy of value
     6. Only 1 mutable reference possible OR many immutable references possible, but NOT both, in a given scope. Lemma: But possible in the same scope if immutable reference is not being accessed after definition of mutable reference and vice versa. Lemma is true also for 2 mutable references, not just 1 mut and 1 immut reference
-    7. * - dereference, & - reference, ref - reference 
+    7. '*' - dereference, & - reference, ref - reference 
 15. let s: Box<str> = "hello, world".into(); into() - converts static type to heap here (similar to ‘as’)
 16. &str: pronounced string slice
 17. Can ONLY append literals to a string, not another string
@@ -61,7 +61,139 @@ Personal notes on my journey to mastering Rust on Solana.
         }
 29. Iterate the indexing and value in 'a'
 
-        let a = [4, 3, 2, 1];
-        for (i,v) in a.iter().enumerate() {
-            println!("The {}th element is {}",i+1,v);
+    ```rust
+    let a = [4, 3, 2, 1];
+    for (i, v) in a.iter().enumerate() {
+        println!("The {}th element is {}", i + 1, v);
+    }
+    ```
+30. Expression is supposed to return a value, statement is not.
+31. ```rust
+    fn main() {
+        let alphabets = ['a', 'E', 'Z', '0', 'x', '9' , 'Y'];
+
+        // Fill the blank with `matches!` to make the code work
+        for ab in alphabets {
+            assert!(matches!(ab, 'A'..='Z' | 'a'..='z' | '0'..='9'))
         }
+
+        println!("Success!");
+    } 
+    ```
+32. Use `matches!` to compare compound types
+    ```rust
+        enum MyEnum {
+            Foo,
+            Bar
+        }
+
+        fn main() {
+            let mut count = 0;
+
+            let v = vec![MyEnum::Foo,MyEnum::Bar,MyEnum::Foo];
+            for e in v {
+                if matches!(e, MyEnum::Foo) { // note
+                    count += 1;
+                }
+            }
+
+            assert_eq!(count, 2);
+
+            println!("Success!");
+        }
+    ```
+33. `if let` > `match` when comparing compound types (enums etc) that have max 1 value. `match` otherwise.
+34. `match` and `if let` can introduce shadowed variables
+35. Note the partial destructurings in `match` arms (x, y, x and y respectively)
+    ```rust
+
+    struct Point {
+        x: i32,
+        y: i32,
+    }
+
+    fn main() {
+        // Fill in the blank to let p match the second arm
+        let p = Point { x: 4, y: 10 };
+
+        match p {
+            Point { x, y: 0 } => println!("On the x axis at {}", x),
+            // Second arm
+            Point { x: 0..=5, y: y@ (10 | 20 | 30) } => println!("On the y axis at {}", y),
+            Point { x, y } => println!("On neither axis: ({}, {})", x, y),
+        }
+    }
+    ```
+36. `if x < split` is called a 'match guard'
+    ```rust
+    // Fill in the blank to make the code work, `split` MUST be used
+    fn main() {
+        let num = Some(4);
+        let split = 5;
+        match num {
+            Some(x) if x < split => assert!(x < split),
+            Some(x) => assert!(x >= split),
+            None => (),
+        }
+
+        println!("Success!");
+    }
+    ```
+37. On comparing mutable reference in a `match`, the value in the match arm is dereferenced before comparison
+    ```rust
+    // FIX the error with least changing
+    // DON'T remove any code line
+    fn main() {
+        let mut v = String::from("hello,");
+        let r = &mut v;
+
+        match r {
+            value => value.push_str(" world!") 
+        }
+    }
+    ```
+38. Methods of structs are called on the instance of the struct. Functions are called on the type.
+    ```rust
+    struct Circle {
+        x: f64,
+        y: f64,
+        radius: f64
+    }
+
+    impl Circle {
+        fn area(&self) -> f64 {
+            std::f64::consts::PI * (self.radius * self.radius)
+        }
+
+        fn diameter() -> f64 {
+            2 * 10.0
+        }
+    }
+
+    let c = Circle { x: 0.0, y: 0.0, radius: 2.0 };
+    println!("{}", c.area()); // => Method
+    println!("{}", Circle::diameter()); // => Function
+    ```
+40. `self` will take the ownership of current struct instance, however, `&self` will only borrow a reference from the instance.
+    ```rust
+    // Only fill in the blanks, DON'T remove any line!
+    #[derive(Debug)]
+    struct TrafficLight {
+        color: String,
+    }
+
+    impl TrafficLight {
+        pub fn show_state(&self)  {
+            println!("the current state is {}", self.color);
+        }
+    }
+    fn main() {
+        let light = TrafficLight{
+            color: "red".to_owned(),
+        };
+        // Don't take the ownership of `light` here.
+        light.show_state();
+        // ... Otherwise, there will be an error below
+        println!("{:?}", light);
+    }
+    ```
