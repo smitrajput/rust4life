@@ -167,7 +167,7 @@ Personal notes on my journey to mastering Rust.
     println!("{}", c.area()); // => Method
     println!("{}", Circle::diameter()); // => Function
     ```
-40. `self` will take the ownership of current struct instance, however, `&self` will only borrow a reference from the instance.
+39. `self` will take the ownership of current struct instance, however, `&self` will only borrow a reference from the instance.
     ```rust
     // Only fill in the blanks, DON'T remove any line!
     #[derive(Debug)]
@@ -188,5 +188,202 @@ Personal notes on my journey to mastering Rust.
         light.show_state();
         // ... Otherwise, there will be an error below
         println!("{:?}", light);
+    }
+    ```
+
+### Dec 6
+40. how generic impl for generic sruct is defined
+    ```rust
+    // Add generic for Val to make the code work, DON'T modify the code in `main`.
+    struct Val<T> {
+        val: T,
+    }
+
+    impl<T> Val<T> {
+        fn value(&self) -> &T {
+            &self.val
+        }
+    }
+
+    fn main() {
+        let x = Val{ val: 3.0 };
+        let y = Val{ val: "hello".to_string()};
+        println!("{}, {}", x.value(), y.value());
+    }
+    ```
+41. method (`mixup()`) of a generic struct (`Point<T, U>`) receiving a generic parameter (`Point<V, W>`) returning a generic struct (`Point<T, W>`)
+    ```rust
+    struct Point<T, U> {
+        x: T,
+        y: U,
+    }
+
+    impl<T, U> Point<T, U> {
+        // Implement mixup to make it work, DON'T modify other code.
+        fn mixup<V, W>(self, z: Point<V, W>) -> Point<T, W> {
+            Point {
+                x: self.x,
+                y: z.y
+            }
+        }
+    }
+
+    fn main() {
+        let p1 = Point { x: 5, y: 10 };
+        let p2 = Point { x: "Hello", y: '中'};
+
+        let p3 = p1.mixup(p2);
+
+        assert_eq!(p3.x, 5);
+        assert_eq!(p3.y, '中');
+
+        println!("Success!");
+    }
+    ```
+42. a `trait` is like a class for struct, but not exactly. Notice how `say_hi()` is reimplemented for `Teacher`
+    ```rust
+    // Fill in the two impl blocks to make the code work.
+    // DON'T modify the code in `main`.
+    trait Hello {
+        fn say_hi(&self) -> String {
+            String::from("hi")
+        }
+
+        fn say_something(&self) -> String;
+    }
+
+    struct Student {}
+    impl Hello for Student {
+        fn say_something(&self) -> String {
+            String::from("I'm a good student")
+        }
+    }
+    struct Teacher {}
+    impl Hello for Teacher {
+        fn say_hi(&self) -> String {
+            String::from("Hi, I'm your new teacher")
+        }
+
+        fn say_something(&self) -> String {
+            String::from("I'm not a bad teacher")
+        }
+    }
+
+    fn main() {
+        let s = Student {};
+        assert_eq!(s.say_hi(), "hi");
+        assert_eq!(s.say_something(), "I'm a good student");
+
+        let t = Teacher {};
+        assert_eq!(t.say_hi(), "Hi, I'm your new teacher");
+        assert_eq!(t.say_something(), "I'm not a bad teacher");
+
+        println!("Success!");
+    }
+    ```
+43. Weird destructuring of struct value (`let &Inches(inches) = self;`), `PartialEq` to allow equality comparison, `PartialOrd` to allow greater / lesser comparison
+    ```rust
+    // `Centimeters`, a tuple struct that can be compared
+    #[derive(PartialEq, PartialOrd)]
+    struct Centimeters(f64);
+
+    // `Inches`, a tuple struct that can be printed
+    #[derive(Debug)]
+    struct Inches(i32);
+
+    impl Inches {
+        fn to_centimeters(&self) -> Centimeters {
+            let &Inches(inches) = self;
+
+            Centimeters(inches as f64 * 2.54)
+        }
+    }
+
+    // ADD some attributes to make the code work!
+    // DON'T modify other code!
+    #[derive(Debug, PartialEq, PartialOrd)]
+    struct Seconds(i32);
+
+    fn main() {
+        let _one_second = Seconds(1);
+
+        println!("One second looks like: {:?}", _one_second);
+        let _this_is_true = (_one_second == _one_second);
+        let _this_is_false = (_one_second > _one_second);
+
+        let foot = Inches(12);
+
+        println!("One foot equals {:?}", foot);
+
+        let meter = Centimeters(100.0);
+
+        let cmp =
+            if foot.to_centimeters() < meter {
+                "smaller"
+            } else {
+                "bigger"
+            };
+
+        println!("One foot is {} than one meter.", cmp);
+    }
+    ```
+44. Operator overloading: overloading `*` operator to use `a.mul(b)` from standard library, for any type that implements `Mul` trait
+    ```rust
+    use std::ops;
+
+    // Implement fn multiply to make the code work.
+    // As mentioned above, `+` needs `T` to implement `std::ops::Add` Trait.
+    // So, what about `*`?  You can find the answer here: https://doc.rust-lang.org/core/ops/
+    fn multiply<T: std::ops::Mul<Output = T>>(a:T, b:T) -> T {
+        a * b // a.mul(b)
+    }
+
+    fn main() {
+        assert_eq!(6, multiply(2u8, 3u8));
+        assert_eq!(5.0, multiply(1.0, 5.0));
+
+        println!("Success!");
+    }
+    ```
+45. Overloading `+` operator to funny-add 2 structs (`Foo + Bar = FooBar`)
+    ```rust
+    // Fix the errors, DON'T modify the code in `main`.
+    use std::ops;
+
+    struct Foo;
+    struct Bar;
+
+    #[derive(PartialEq, Debug)]
+    struct FooBar;
+
+    #[derive(PartialEq, Debug)]
+    struct BarFoo;
+
+    // The `std::ops::Add` trait is used to specify the functionality of `+`.
+    // Here, we make `Add<Bar>` - the trait for addition with a RHS of type `Bar`.
+    // The following block implements the operation: Foo + Bar = FooBar
+    impl ops::Add<Bar> for Foo {
+        type Output = FooBar;
+
+        fn add(self, _rhs: Bar) -> FooBar {
+            FooBar
+        }
+    }
+
+    impl ops::Sub<Bar> for Foo {
+        type Output = BarFoo;
+
+        fn sub(self, _rhs: Bar) -> BarFoo {
+            BarFoo
+        }
+    }
+
+    fn main() {
+        // DON'T modify the code below.
+        // You need to derive some trait for FooBar to make it comparable.
+        assert_eq!(Foo + Bar, FooBar);
+        assert_eq!(Foo - Bar, BarFoo);
+
+        println!("Success!");
     }
     ```
