@@ -1,4 +1,4 @@
-# rust4life
+# rust-ballistics
 Personal notes on my journey to mastering Rust.
 
 ## Daily Notes
@@ -240,7 +240,7 @@ Personal notes on my journey to mastering Rust.
         println!("Success!");
     }
     ```
-42. a `trait` is like a class for struct, but not exactly. Notice how `say_hi()` is reimplemented for `Teacher`
+42. a `trait` is like a class for struct, but not exactly. Mainly used when you want some structs to share some functionalities. Notice how `say_hi()` is reimplemented for `Teacher`
     ```rust
     // Fill in the two impl blocks to make the code work.
     // DON'T modify the code in `main`.
@@ -385,5 +385,176 @@ Personal notes on my journey to mastering Rust.
         assert_eq!(Foo - Bar, BarFoo);
 
         println!("Success!");
+    }
+    ```
+
+### Dec 7
+
+46. All functions of a trait must be implemented by the struct that uses it.
+
+47. `trait` as a fn parameter. Used to restrict parameter types to those that implement the trait. Note both implementations of `summary()`
+    ```rust
+    // Implement `fn summary` to make the code work.
+    // Fix the errors without removing any code line
+    trait Summary {
+        fn summarize(&self) -> String;
+    }
+
+    #[derive(Debug)]
+    struct Post {
+        title: String,
+        author: String,
+        content: String,
+    }
+
+    impl Summary for Post {
+        fn summarize(&self) -> String {
+            format!("The author of post {} is {}", self.title, self.author)
+        }
+    }
+
+    #[derive(Debug)]
+    struct Weibo {
+        username: String,
+        content: String,
+    }
+
+    impl Summary for Weibo {
+        fn summarize(&self) -> String {
+            format!("{} published a weibo {}", self.username, self.content)
+        }
+    }
+
+    fn main() {
+        let post = Post {
+            title: "Popular Rust".to_string(),
+            author: "Sunface".to_string(),
+            content: "Rust is awesome!".to_string(),
+        };
+        let weibo = Weibo {
+            username: "sunface".to_string(),
+            content: "Weibo seems to be worse than Tweet".to_string(),
+        };
+
+        summary(&post);
+        summary(&weibo);
+
+        println!("{:?}", post);
+        println!("{:?}", weibo);
+    }
+
+    // Implement `fn summary` below.
+    fn summary(a: &impl Summary) {
+        let output: String = a.summarize();
+        
+        println!("{}", output);
+    }
+
+    //// alternate implementation ////
+    fn summary<T: Summary>(a: &T) {
+        let output: String = a.summarize();
+        
+        println!("{}", output);
+    }
+
+    ```
+48. _General compiler rule: sizes of return types must be known at compile time._
+
+49. `Box` is smart pointer that allocates memory in heap. Used for types whose size is not known at compile time. It allocates and owns the memory in heap. Also deallocates memory when out of scope. `&` on the other hand only points to existing memory. `Box` can be passed across scopes, but `&` has limited lifetime. `Box` can be cloned, but `&` cannot be. `Box` can be used in pattern matching.
+
+50. Dynamic Dispatch
+    <img width="1528" alt="Screenshot 2024-12-07 at 9 41 55 AM" src="https://github.com/user-attachments/assets/c5702b60-5c15-4db6-a244-874c83261e80">
+
+
+51. For functions wanting to return different types that implement a given trait, we cannot use `impl Trait` directly as size of return type is unknown at compile time, so need to dynamic dispatch the return value, using `Box<dyn Trait>`
+    ```rust
+    struct Sheep {}
+    struct Cow {}
+
+    trait Animal {
+        fn noise(&self) -> String;
+    }
+
+    impl Animal for Sheep {
+        fn noise(&self) -> String {
+            "baaaaah!".to_string()
+        }
+    }
+
+    impl Animal for Cow {
+        fn noise(&self) -> String {
+            "moooooo!".to_string()
+        }
+    }
+
+    // Returns some struct that implements Animal, but we don't know which one at compile time.
+    // FIX the errors here, you can make a fake random, or you can use trait object.
+    fn random_animal(random_number: f64) -> Box<dyn Animal> {
+        if random_number < 0.5 {
+            Box::new(Sheep {})
+        } else {
+            Box::new(Cow {})
+        }
+    }
+
+    fn main() {
+        let random_number = 0.234;
+        let animal = random_animal(random_number);
+        println!("You've randomly chosen an animal, and it says {}", animal.noise());
+    }
+    ```
+
+52. `impl Trait` is a specific trait bound. More generally, when working with generics, the type parameters often use traits as bounds to stipulate what functionality a type implements, in various other ways. Below, `T` is bound to any type that implements `std::ops::Add` trait.
+    ```rust
+    fn main() {
+        assert_eq!(sum(1, 2), 3);
+    }
+
+    // Implement `fn sum` with trait bound in two ways.
+    fn sum<T: std::ops::Add<Output = T>>(x: T, y: T) -> T {
+        x + y
+    }
+    ```
+
+53. More trait bounds. Observe the alternate implementation of creating a struct. Also note `Self == Pair<T>`
+    ```rust
+    struct Pair<T> {
+        x: T,
+        y: T,
+    }
+
+    impl<T> Pair<T> {
+        // Self == Pair<T>
+        fn new(x: T, y: T) -> Self {
+            Self {
+                x,
+                y,
+            }
+        }
+    }
+
+    impl<T: std::fmt::Debug + PartialOrd + PartialEq> Pair<T> {
+        fn cmp_display(&self) {
+            if self.x >= self.y {
+                println!("The largest member is x = {:?}", self.x);
+            } else {
+                println!("The largest member is y = {:?}", self.y);
+            }
+        }
+    }
+
+    #[derive(Debug, PartialOrd, PartialEq)]
+    struct Unit(i32);
+
+    fn main() {
+        let pair = Pair{
+            x: Unit(1),
+            y: Unit(3)
+        };
+        
+        // alternate version of creating a struct
+        let pair = Pair::new(Unit(1), Unit(3));
+
+        pair.cmp_display();
     }
     ```
