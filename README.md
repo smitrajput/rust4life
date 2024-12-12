@@ -881,3 +881,170 @@ Personal notes on my journey to mastering Rust.
         println!("Success!");
     }
     ```
+
+### Dec 12
+
+66. String is a vector that holds utf-8 encoded bytes.
+
+67. `vec![1, 2, 3]` == `vec!(1, 2, 3)`, `Vec::from(arr)`: array to vector
+    ```rust
+    fn main() {
+        let arr: [u8; 3] = [1, 2, 3];
+        
+        let v = Vec::from(arr);
+        is_vec(&v);
+
+        let v = vec![1, 2, 3];
+        is_vec(&v);
+
+        // vec!(..) and vec![..] are same macros, so
+        let v = vec!(1, 2, 3);
+        is_vec(&v);
+        
+        // In code below, v is Vec<[u8; 3]> , not Vec<u8>
+        // USE Vec::new and `for` to rewrite the below code 
+        let mut v1 = Vec::new();
+        is_vec(&v1);
+    
+        for i in &v {
+            v1.push(*i);
+        }
+    
+        assert_eq!(v, v1);
+
+        println!("Success!");
+    }
+
+    fn is_vec(v: &Vec<u8>) {}
+    ```
+
+68. `v2.extend(&v1)`: appends all elements of `v1` to `v2`
+
+69. `Vec::from(arr)` == `arr.into()` == `string_var.into()` == `string_var.into_bytes()` == `[0; 10].into_iter().collect()` (`iter().collect()` also works for hashmaps)
+
+70. `v.get(i)` returns `None` if `i` is out of bounds without panicking
+    ```rust
+    fn main() {
+        let mut v = Vec::from([1, 2, 3]);
+        for i in 0..5 {
+            println!("{:?}", v.get(i)) // get returns Option<&i32> i.e. Some, None
+        }
+
+        for i in 0..5 {
+            match v.get(i) {
+                Some(e) => v[i] = e + 1,
+                None => v.push(i + 2)
+            }
+        }
+        
+        assert_eq!(v, vec![2, 3, 4, 5, 6]);
+
+        println!("Success!");
+    }
+    ```
+
+71. when a `vector` and `string` are reallocated, their capacity is doubled.
+
+72. Hashmaps are an unordered collection of key-value pairs. `Hashmap:remove()` to delete a key-value pair. Allows insert, delete, and lookup in O(1) time (and O(n) in worst case)
+
+73. hashmap insertion convenience functions
+    ```rust
+    use std::collections::HashMap;
+    fn main() {
+        // Type inference lets us omit an explicit type signature (which
+        // would be `HashMap<&str, u8>` in this example).
+        let mut player_stats = HashMap::new();
+
+        // Insert a key only if it doesn't already exist
+        player_stats.entry("health").or_insert(100);
+
+        assert_eq!(player_stats["health"], 100);
+
+        // Insert a key using a function that provides a new value only if it
+        // doesn't already exist
+        player_stats.entry("health").or_insert_with(random_stat_buff);
+        assert_eq!(player_stats["health"], 100);
+
+        // Ensures a value is in the entry by inserting the default if empty, and returns
+        // a mutable reference to the value in the entry.
+        let health = player_stats.entry("health").or_insert(50);
+        assert_eq!(health, &100);
+        *health -= 50;
+        assert_eq!(*health, 50);
+
+        println!("Success!");
+    }
+
+    fn random_stat_buff() -> u8 {
+        // Could actually return some random value here - let's just return
+        // some fixed value for now
+        42
+    }
+    ```
+
+74. only types that implement `Hash` and `Eq` can be used as keys in a hashmap.
+
+75. ways to approximately reduce the size of a hashmap. Note that the approximation here is due to some internal compiler stuff.
+    ```rust
+    use std::collections::HashMap;
+    fn main() {
+        let mut map: HashMap<i32, i32> = HashMap::with_capacity(100);
+        map.insert(1, 2);
+        map.insert(3, 4);
+        // Indeed ,the capacity of HashMap is not 100, so we can't compare the equality here.
+        assert!(map.capacity() >= 100);
+
+        // Shrinks the capacity of the map with a lower limit. It will drop
+        // down no lower than the supplied limit while maintaining the internal rules
+        // and possibly leaving some space in accordance with the resize policy.
+
+        map.shrink_to(50);
+        assert!(map.capacity() >= 50);
+
+        // Shrinks the capacity of the map as much as possible. It will drop
+        // down as much as possible while maintaining the internal rules
+        // and possibly leaving some space in accordance with the resize policy.
+        map.shrink_to_fit();
+        assert!(map.capacity() >= 2);
+        println!("Success!");
+    }
+    ```
+
+76. hashmap takes ownersip of owned variables and copies static types during insertion, unless their reference is passed in
+
+77. `#[allow(overflowing_literals)]` to silence error in `1000 as u8` which returns `232`, and other anomalies
+    ```rust
+    #[allow(overflowing_literals)]
+    fn main() {
+        assert_eq!(1000 as u16, 1000);
+
+        assert_eq!(1000 as u8, 232);
+
+        // For positive numbers, this is the same as the modulus
+        println!("1000 mod 256 is : {}", 1000 % 256);
+
+        assert_eq!(-1_i8 as u8, 255);
+        
+        // Since Rust 1.45, the `as` keyword performs a *saturating cast* 
+        // when casting from float to int. If the floating point value exceeds 
+        // the upper bound or is less than the lower bound, the returned value 
+        // will be equal to the bound crossed.
+        assert_eq!(300.1_f32 as u8, 255);
+        assert_eq!(-100.1_f32 as u8, 0);
+        
+
+        // This behavior incurs a small runtime cost and can be avoided 
+        // with unsafe methods, however the results might overflow and 
+        // return **unsound values**. Use these methods wisely:
+        unsafe {
+            // 300.0 is 44
+            println!("300.0 is {}", 300.0_f32.to_int_unchecked::<u8>());
+            // -100.0 as u8 is 156
+            println!("-100.0 as u8 is {}", (-100.0_f32).to_int_unchecked::<u8>());
+            // nan as u8 is 0
+            println!("nan as u8 is {}", f32::NAN.to_int_unchecked::<u8>());
+        }
+    }
+    ```
+
+78. 
