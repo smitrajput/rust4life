@@ -1047,4 +1047,6 @@ Personal notes on my journey to mastering Rust.
     }
     ```
 
-78. 
+78. implementing `from` trait auto-implements `into()` method. Implementing `fmt::Display` trait auto-implements `to_string()` method.
+
+79. String to i32: `"5".parse().unwrap()` == `i32::from_str("5").unwrap()`
