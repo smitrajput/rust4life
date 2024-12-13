@@ -1050,3 +1050,17 @@ Personal notes on my journey to mastering Rust.
 78. implementing `from` trait auto-implements `into()` method. Implementing `fmt::Display` trait auto-implements `to_string()` method.
 
 79. String to i32: `"5".parse().unwrap()` == `i32::from_str("5").unwrap()`
+
+### Dec 13
+
+80. `221_u8 * 135_u8` panics due to overflow on `u8`.
+
+81. `v.get(1).unwrap()` returns a reference to the value, not the value itself.
+
+82. `RUST_BACKTRACE=1 cargo run` to see backtrace.
+
+83. `Result` is an enum that returns `Ok(val)` or `Err(msg)`.
+
+84. `unwrap()` takes `Result` as input and returns the value inside `Ok(val)`, or panics.
+
+85. `?` is basically `unwrap()` that returns error instead of panicking.
