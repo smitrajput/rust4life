@@ -1064,3 +1064,77 @@ Personal notes on my journey to mastering Rust.
 84. `unwrap()` takes `Result` as input and returns the value inside `Ok(val)`, or panics.
 
 85. `?` is basically `unwrap()` that returns error instead of panicking.
+
+### Dec 14
+
+1. A package (project) can have multiple binary (executables) crates but only one library (reusable code) crate.
+
+2. `crate::module_name::function_name()` to call a function in a library, `package_name::module_name::function_name()` to call a function in a binary.
+
+3. `{}`: display notation, `{:?}`: debug notation. Custom types need to implement `fmt::Display` and `fmt::Debug` traits to be used with `{}` and `{:?}`, in `println!()`, `format!()`, etc to be displayed. Static types have these implemented in std lib.
+
+4. beautify struct displays using `{:#?}` (with `#[derive(Debug)]` ofc)
+
+5. manually modify existing `Debug` trait implementations for a struct. Making it print `7` instead of `Deep(Structure(7))`
+    ```rust
+    use std::fmt;
+
+    struct Structure(i32);
+
+    struct Deep(Structure);
+
+    // this snippet is from the docs
+    impl fmt::Debug for Deep {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}", self.0.0)
+        }
+    }
+
+    fn main() {    
+        // The problem with `derive` is there is no control over how
+        // the results look. What if I want this to just show a `7`?
+
+        /* Make it print: Now 7 will print! */
+        println!("Now {:?} will print!", Deep(Structure(7)));
+    }
+    ```
+6. Dangling references: reference to a variable that has gone out of scope. Avoid it by ensuring that variables ALWAYS outlive their references, and not vice versa.
+
+### Dec 15
+
+1. Functions accepting references as arguments, need to know their lifetimes to ensure that the reference is valid for the duration of the function call, otherwise the compiler will throw an error.
+    ```rust
+    /* Make it work by adding proper lifetime annotation */
+    fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+        if x.len() > y.len() {
+            x
+        } else {
+            y
+        }
+    }
+
+    fn main() {
+        let x = "long";
+        let y = "longer";
+        
+        println!("{}", longest(x, y));
+    }
+    ```
+
+2. an example of when the reference does not outlive the function, hence does not compile.
+    ```rust
+    // `'a` must live longer than the function.
+    // Here, `&String::from("foo")` would create a `String`, followed by a
+    // reference. Then the data is dropped upon exiting the scope, leaving
+    // a reference to invalid data to be returned.
+
+    /* Fix the error in three ways  */
+    fn invalid_output<'a>() -> &'a String { 
+        &String::from("foo") 
+    }
+
+    fn main() {
+        let x = invalid_output();
+        println!("{}", x);
+    }
+    ```
