@@ -1138,3 +1138,119 @@ Personal notes on my journey to mastering Rust.
         println!("{}", x);
     }
     ```
+
+### Dec 20
+
+1. Variable must outlive its reference, and the reference (of parameters, return type) must outlive the function. This won't compile coz the reference `y` does not outlive `failed_borrow()` (read comment). But compiles if `'a` is removed from both places.
+    ```rust
+    // A function which takes no arguments, but has a lifetime parameter `'a`.
+    fn failed_borrow<'a>() {
+        let _x = 12;
+
+        // ERROR: `_x` does not live long enough
+        let y: &'a i32 = &_x;
+        // Attempting to use the lifetime `'a` as an explicit type annotation 
+        // inside the function will fail because the lifetime of `&_x` is shorter
+        // than `'a` . A short lifetime cannot be coerced into a longer one.
+    }
+    ```
+
+2. Lifetime elision: automatic lifetime inference of references by compiler. Rules:
+    - each reference is assigned a lifetime
+    - if only 1 input reference, its lifetime is assigned to all output references (and if multiple input references, then need to manually assign output reference lifetime)
+    - if multiple references, but one of them is `&self` or `&mut self`, the lifetime of `self` is assigned to all output references<br/>
+    ```rust
+    /* The following is a minimum compilable example! */
+
+    fn input(x: &i32) {
+        println!("`annotated_input`: {}", x);
+    }
+
+    fn pass(x: &i32) -> &i32 { x }
+
+    fn longest<'a, 'b>(x: &'a str, y: &'b str) -> &'a str {
+        x
+    }
+
+    struct Owner(i32);
+
+    impl Owner {
+        // Annotate lifetimes as in a standalone function.
+        fn add_one(&mut self) { self.0 += 1; }
+        fn print(&self) {
+            println!("`print`: {}", self.0);
+        }
+    }
+
+    struct Person<'a> {
+        age: u8,
+        name: &'a str,
+    }
+
+    enum Either {
+        Num(i32),
+        Ref(&'static i32),
+    }
+
+    fn main() {}
+    ```
+
+3. `'static` lifetime: lifetime of the entire program.  `&'static` only indicates that the data can live forever, not the reference, which will be constrained by its scope. `'static` can be coerced into a shorter lifetime, but not vice versa.
+    ```rust
+    // Make a constant with `'static` lifetime.
+    static NUM: i32 = 18;
+
+    // Returns a reference to `NUM` where its `'static`
+    // lifetime is coerced to that of the input argument.
+    fn coerce_static<'a>(_: &'a i32) -> &'a i32 {
+        &NUM
+    }
+
+    fn main() {
+        {
+            // Make an integer to use for `coerce_static`:
+            let lifetime_num = 9;
+
+            // Coerce `NUM` to lifetime of `lifetime_num`:
+            let coerced_static = coerce_static(&lifetime_num);
+
+            println!("coerced_static: {}", coerced_static);
+        }
+
+        println!("NUM: {} stays accessible!", NUM);
+    }
+    ```
+
+4. `i` has `'static` lifetime but its reference's lifetime is limited to `main()`. (`const i` or `static i`)'s reference is `'static` though (while their lifetime is `'static` ofc).
+    ```rust
+    use std::fmt::Debug;
+
+    fn print_it<T: Debug + 'static>( input: T) {
+        println!( "'static value passed in is: {:?}", input );
+    }
+
+    // same as above
+    fn print_it1( input: impl Debug + 'static ) {
+        println!( "'static value passed in is: {:?}", input );
+    }
+
+
+    fn print_it2<T: Debug + 'static>( input: &T) {
+        println!( "'static value passed in is: {:?}", input );
+    }
+
+    fn main() {
+        // i is owned and contains no references, thus it's 'static:
+        let i = 5;
+        print_it(i);
+
+        // oops, &i only has the lifetime defined by the scope of
+        // main(), so it's not 'static:
+        print_it(&i);
+
+        print_it1(&i);
+
+        // but this one WORKS !
+        print_it2(&i);
+    }
+    ```
